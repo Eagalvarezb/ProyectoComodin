@@ -1,0 +1,32 @@
+const dbConfig = require("../configdb/db.config.js");
+
+const Sequelize = require("sequelize");
+
+const sequelize = new Sequelize(dbConfig.DB, dbConfig.USER, dbConfig.PASSWORD, {
+  host: dbConfig.HOST,
+  dialect: dbConfig.dialect,
+  dialectOptions:{
+    ssl:{
+        require: true,
+        rejectUnauthorized:false
+    }
+  },
+  pool: {
+    max: dbConfig.pool.max,
+    min: dbConfig.pool.min,
+    acquire: dbConfig.pool.acquire,
+    idle: dbConfig.pool.idle,
+    ssl: {
+      rejectUnauthorized: false
+    }
+  }
+});
+const db = {};
+db.Sequelize = Sequelize;
+
+db.sequelize = sequelize;
+
+db.teacher =  require("./teacher.model.js")(sequelize,Sequelize);
+db.curso = require("./cursos.model.js")(sequelize,Sequelize);
+
+module.exports = db;
