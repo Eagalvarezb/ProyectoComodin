@@ -1,4 +1,5 @@
 const db = require("../models");
+
 const Asignacion = db.asignaciones;
 const Student = db.students;
 const Course = db.courses;
@@ -18,11 +19,11 @@ exports.findAll = async (req, res) => {
     try {
         const asignaciones = await Asignacion.findAll({
             include: [
-                { model: Student, as: "student", attributes: ["id", "nombre", "email"] },
-                { model: Course, as: "course", attributes: ["id_curso", "nombre", "codigo"] }
+                { model: Student, as: "student", attributes: ["nombre"] },
+                { model: Course, as: "course", attributes: ["nombre"] }
             ]
         });
-        res.json(asignaciones);
+        res.json({data : asignaciones});
     } catch (error) {
         res.status(500).json({ message: "Error listando asignaciones", error: error.message });
     }
@@ -31,7 +32,12 @@ exports.findAll = async (req, res) => {
 // Buscar por ID
 exports.findOne = async (req, res) => {
     try {
-        const asignacion = await Asignacion.findByPk(req.params.id);
+        const asignacion = await Asignacion.findByPk(req.params.id, {
+            include: [
+                { model: Student, as: "student", attributes: ["nombre"] },
+                { model: Course, as: "course", attributes: ["nombre"] }
+            ]
+        });
         if (!asignacion) return res.status(404).json({ message: "Asignacion no encontrada" });
         res.json(asignacion);
     } catch (error) {
