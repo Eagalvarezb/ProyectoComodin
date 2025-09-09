@@ -1,5 +1,5 @@
 {
-  "name": "profectocomodin",
+  "name": "proyectocomodin",
   "version": "1.0.0",
   "description": "Node.js Rest Apis with Express, Sequelize & PostgreSQL",
   "main": "server.js",

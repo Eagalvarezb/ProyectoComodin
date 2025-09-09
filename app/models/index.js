@@ -29,6 +29,8 @@ db.students = require("./student.model.js")(sequelize, Sequelize);
 db.teachers = require("./teacher.model.js")(sequelize, Sequelize);
 db.courses = require("./curso.model.js")(sequelize, Sequelize);
 db.grados = require("./grado.model.js")(sequelize, Sequelize);
+db.asignaciones = require("./asignacion.model.js")(sequelize, Sequelize);
+
 
 //  Definición de relaciones
 
@@ -44,4 +46,16 @@ db.grados.belongsTo(db.students, { foreignKey: "studentId", as: "estudiante" });
 db.courses.hasMany(db.grados, { foreignKey: "courseId", as: "grados" });
 db.grados.belongsTo(db.courses, { foreignKey: "courseId", as: "curso" });
 
+// Relacion: student -> asignacion (un estudiante puede tener multiples asignaciones)
+db.students.hasMany(db.asignaciones, { foreignKey: "studentId", as: "asignaciones" });
+db.asignaciones.belongsTo(db.students, { foreignKey: "studentId", as: "student" });
+
+// Relacion: courses -> asignaciones (un curso puede tener multiples asignaciones)
+db.courses.hasMany(db.asignaciones, { foreignKey: "courseId", as: "asignaciones" });
+db.asignaciones.belongsTo(db.courses, { foreignKey: "courseId", as: "course" });
+
+/*db.sequelize.sync({ alter: true })
+  .then(() => {console.log("Base de datos sincronizada con modelos correctamente.");})
+  .catch(err => {console.error("Error sincronizando la base de datos:", err);});
+*/
 module.exports = db;

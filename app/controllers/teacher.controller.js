@@ -1,131 +1,70 @@
- const db = require("../models");
-    const Teacher = db.teacher;
-    const Op = db.Sequelize.Op;
+const db = require("../models");
+const Teacher = db.teachers;
+const Curso = db.courses;
+const Op = db.Sequelize.Op;
 
- 
-    exports.create = (req, res) => {
-        // Validamos que dentro del  request no venga vacio el nombre, de lo contrario returna error
-        if (!req.body.nombre) {
-            res.status(400).send({
-                message: "Content can not be empty!"
-            });
-            return;
+exports.create = async (req, res) => {
+    if (!req.body.nombre) {
+        return res.status(400).json({ message: "El nombre es obligatorio" });
+    }
+    try {
+        const teacher = await Teacher.create(req.body);
+        res.status(201).json({ message: "Teacher creado", data: teacher });
+    } catch (error) {
+        res.status(500).json({ message: "Error creando teacher", error: error.message });
+    }
+};
+
+exports.findAll = async (req, res) => {
+    try {
+        const condition = req.query.nombre
+            ? { nombre: { [Op.iLike]: `%${req.query.nombre}%` } }
+            : {};
+        const teachers = await Teacher.findAll({ where: condition, include: [{ model: db.courses, as: "cursos" }] });
+        res.json(teachers);
+    } catch (error) {
+        res.status(500).json({ message: "Error listando teachers", error: error.message });
+    }
+};
+
+exports.findOne = async (req, res) => {
+    try {
+        const teacher = await Teacher.findByPk(req.params.id, { include: [{ model: db.courses, as: "cursos" }] });
+        if (!teacher) return res.status(404).json({ message: "Teacher no encontrado" });
+        res.json(teacher);
+    } catch (error) {
+        res.status(500).json({ message: "Error buscando teacher", error: error.message });
+    }
+};
+
+exports.update = async (req, res) => {
+    try {
+        const [updated] = await Teacher.update(req.body, { where: { id: req.params.id } });
+        if (updated) {
+            const updatedTeacher = await Teacher.findByPk(req.params.id);
+            return res.json({ message: "Teacher actualizado", data: updatedTeacher });
         }
+        res.status(404).json({ message: "Teacher no encontrado para actualizar" });
+    } catch (error) {
+        res.status(500).json({ message: "Error actualizando teacher", error: error.message });
+    }
+};
 
-        
-    const teacher = {
-            nombre: req.body.nombre,
-            email: req.body.email,
-            telefono: req.body.telefono,
-            direccion: req.body.direccion,
-            especialidad: req.body.especialidad,
-            estado: req.body.estado
-        };
+exports.delete = async (req, res) => {
+    try {
+        const deleted = await Teacher.destroy({ where: { id: req.params.id } });
+        if (deleted) return res.json({ message: "Teacher eliminado" });
+        res.status(404).json({ message: "Teacher no encontrado" });
+    } catch (error) {
+        res.status(500).json({ message: "Error eliminando teacher", error: error.message });
+    }
+};
 
-        // Save a new Client into the database
-        Teacher.create(teacher)
-            .then(data => {
-                res.send(data);
-            })
-            .catch(err => {
-                res.status(500).send({
-                    message:
-                        err.message || "Some error occurred while creating the teacher."
-                });
-            });
-    };
-
-   exports.findAll = (req, res) => {
-        const nombre = req.query.nombre;
-        var condition = nombre ? { nombre: { [Op.iLike]: `%${nombre}%` } } : null;
-
-        Teacher.findAll({ where: condition })
-            .then(data => {
-                res.send(data);
-            })
-            .catch(err => {
-                res.status(500).send({
-                    message:
-                        err.message || "Some error occurred while retrieving teacher."
-                });
-            });
-    };
-
-    // Find a single Tutorial with an id
-    exports.findOne = (req, res) => {
-        const id = req.params.id;
-
-        Teacher.findByPk(id)
-            .then(data => {
-                res.send(data);
-            })
-            .catch(err => {
-                res.status(500).send({
-                    message: "Error retrieving Teacher with id=" + id
-                });
-            });
-    };
-
-    exports.update = (req, res) => {
-        const id = req.params.id;
-
-        Teacher.update(req.body, {
-            where: { teacherId: id }
-        })
-            .then(num => {
-                if (num == 1) {
-                    res.send({
-                        message: "Teacher was updated successfully."
-                    });
-                } else {
-                    res.send({
-                        message: `Cannot update Teacher with id=${id}. Maybe Teacher was not found or req.body is empty!`
-                    });
-                }
-            })
-            .catch(err => {
-                res.status(500).send({
-                    message: "Error updating Teacher with id=" + id
-                });
-            });
-    };
-
-    exports.delete = (req, res) => {
-        const id = req.params.id;
-        // utilizamos el metodo destroy para eliminar el objeto mandamos la condicionante where id = parametro que recibimos 
-        Teacher.destroy({
-            where: { teacherId: id }
-        })
-            .then(num => {
-                if (num == 1) {
-                    res.send({
-                        message: "Teacher was deleted successfully!"
-                    });
-                } else {
-                    res.send({
-                        message: `Cannot delete teacher with id=${id}. El teacher no fue encontado!`
-                    });
-                }
-            })
-            .catch(err => {
-                res.status(500).send({
-                    message: "Could not delete teacher with id=" + id
-                });
-            });
-    };
-
-    exports.deleteAll = (req, res) => {
-        Teacher.destroy({
-            where: {},
-            truncate: false
-        })
-            .then(nums => {
-                res.send({ message: `${nums} Teacher were deleted successfully!` });
-            })
-            .catch(err => {
-                res.status(500).send({
-                    message:
-                        err.message || "Some error occurred while removing all Teachers."
-                });
-            });
-    };
+exports.deleteAll = async (req, res) => {
+    try {
+        const deleted = await Teacher.destroy({ where: {}, truncate: false });
+        res.json({ message: `${deleted} teachers eliminados` });
+    } catch (error) {
+        res.status(500).json({ message: "Error eliminando todos los teachers", error: error.message });
+    }
+};

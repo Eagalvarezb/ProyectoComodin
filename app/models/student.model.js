@@ -1,34 +1,32 @@
-// student.model.js
-// Definicion de la entidad Student (tabla de estudiantes en la BD)
-
 module.exports = (sequelize, Sequelize) => {
-  const Student = sequelize.define("student", {
-    // ID autoincremental
-    id: {
-      type: Sequelize.INTEGER,
-      autoIncrement: true,
-      primaryKey: true
-    },
-    // Nombre del estudiante
-    nombre: {
-      type: Sequelize.STRING,
-      allowNull: false
-    },
-    // Apellido del estudiante
-    apellido: {
-      type: Sequelize.STRING,
-      allowNull: false
-    },
-    // Correo electronico (unico en la BD)
-    email: {
-      type: Sequelize.STRING,
-      allowNull: false,
-      unique: true,
-      validate: {
-        isEmail: true // valida que sea formato correo
-      }
-    }
-  });
+    const Student = sequelize.define("student", {
+        id: {
+            type: Sequelize.INTEGER,
+            primaryKey: true,
+            autoIncrement: true
+        },
+        nombre: {
+            type: Sequelize.STRING,
+            allowNull: false
+        },
+        apellido: {
+            type: Sequelize.STRING,
+            allowNull: false
+        },
+        email: {
+            type: Sequelize.STRING,
+            allowNull: false,
+            unique: true,
+            validate: { isEmail: true }
+        }
+    });
 
-  return Student;
+    Student.associate = (models) => {
+        Student.hasMany(models.Grado, {
+            foreignKey: "studentId",
+            as: "notas"
+        });
+    };
+
+    return Student;
 };

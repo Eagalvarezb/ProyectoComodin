@@ -1,22 +1,12 @@
 module.exports = app => {
-  const grados = require("../controllers/grado.controller.js");
-  const router = require("express").Router();
+    const grado = require("../controllers/grado.controller.js");
+    const router = require("express").Router();
 
-  // Registrar una nota
-  router.post("/", grados.create);
+    router.post("/", grado.create);          // Crear
+    router.get("/", grado.findAll);          // Listar todos
+    router.get("/:id", grado.findOne);       // Buscar por ID
+    router.put("/:id", grado.update);        // Actualizar
+    router.delete("/:id", grado.delete);     // Eliminar
 
-  // Listar todas las notas
-  router.get("/", grados.findAll);
-
-  // Buscar nota por ID
-  router.get("/:id", grados.findOne);
-
-  // Actualizar nota
-  router.put("/:id", grados.update);
-
-  // Eliminar nota
-  router.delete("/:id", grados.delete);
-
-  // Ruta base
-  app.use("/api/grados", router);
+    app.use("/api/grados", router);
 };
