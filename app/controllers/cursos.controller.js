@@ -73,11 +73,3 @@ exports.delete = async (req, res) => {
     }
 };
 
-exports.deleteAll = async (req, res) => {
-    try {
-        const deleted = await Curso.destroy({ where: {}, truncate: false });
-        res.json({ message: `${deleted} cursos eliminados` });
-    } catch (error) {
-        res.status(500).json({ message: "Error eliminando todos los cursos", error: error.message });
-    }
-};

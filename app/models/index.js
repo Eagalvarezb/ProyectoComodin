@@ -54,8 +54,4 @@ db.asignaciones.belongsTo(db.students, { foreignKey: "studentId", as: "student" 
 db.courses.hasMany(db.asignaciones, { foreignKey: "courseId", as: "asignaciones" });
 db.asignaciones.belongsTo(db.courses, { foreignKey: "courseId", as: "course" });
 
-/*db.sequelize.sync({ alter: true })
-  .then(() => {console.log("Base de datos sincronizada con modelos correctamente.");})
-  .catch(err => {console.error("Error sincronizando la base de datos:", err);});
-*/
 module.exports = db;

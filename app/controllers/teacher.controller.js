@@ -60,11 +60,3 @@ exports.delete = async (req, res) => {
     }
 };
 
-exports.deleteAll = async (req, res) => {
-    try {
-        const deleted = await Teacher.destroy({ where: {}, truncate: false });
-        res.json({ message: `${deleted} teachers eliminados` });
-    } catch (error) {
-        res.status(500).json({ message: "Error eliminando todos los teachers", error: error.message });
-    }
-};
