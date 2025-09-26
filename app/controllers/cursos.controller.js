@@ -1,128 +1,89 @@
- const db = require("../models");
-    const Curso = db.curso;
-    const Op = db.Sequelize.Op;
+const db = require("../models");
+const Curso = db.courses;
+const Teacher = db.teachers;
 
- 
-    exports.create = (req, res) => {
-        if (!req.body.nombre) {
-            res.status(400).send({
-                message: "Content can not be empty!"
-            });
-            return;
-        }
+// Crear curso
+exports.create = (req, res) => {
+    if (!req.body.nombre || !req.body.teacherId || !req.body.credito) {
+        return res.status(400).send({ message: "Nombre, teacherId y credito son obligatorios" });
+    }
 
-        
-    const curso = {
-            teacherId: req.body.teacherId,
-            nombre: req.body.nombre,
-            codigo: req.body.codigo,
-            modalidad: req.body.modalidad,
-            credito: req.body.credito
-        };
-
-        // Save a new Client into the database
-        Curso.create(curso)
-            .then(data => {
-                res.send(data);
-            })
-            .catch(err => {
-                res.status(500).send({
-                    message:
-                        err.message || "Some error occurred while creating the curso."
-                });
-            });
+    const nuevoCurso = {
+        teacherId: req.body.teacherId,
+        nombre: req.body.nombre,
+        codigo: req.body.codigo,
+        modalidad: req.body.modalidad,
+        credito: req.body.credito
     };
 
-   exports.findAll = (req, res) => {
-        const nombre = req.query.nombre;
-        var condition = nombre ? { nombre: { [Op.iLike]: `%${nombre}%` } } : null;
+    Curso.create(nuevoCurso)
+        .then(data => res.status(201).send(data))
+        .catch(err => res.status(500).send({ message: err.message || "Error creando curso" }));
+};
 
-        Curso.findAll({ where: condition })
-            .then(data => {
-                res.send(data);
-            })
-            .catch(err => {
-                res.status(500).send({
-                    message:
-                        err.message || "Some error occurred while retrieving cursos."
-                });
-            });
-    };
+// Listar todos los cursos con solo id + nombre del teacher
+exports.findAll = (req, res) => {
+    Curso.findAll({
+        include: [
+            { model: Teacher, as: "teacher", attributes: ["id", "nombre"] }
+        ]
+    })
+    .then(data => res.send(data))
+    .catch(err => res.status(500).send({ message: err.message || "Error listando cursos" }));
+};
 
-    exports.findOne = (req, res) => {
-        const id = req.params.id;
+// Buscar por ID
+exports.findOne = (req, res) => {
+    const id = req.params.id;
 
-        Curso.findByPk(id)
-            .then(data => {
-                res.send(data);
-            })
-            .catch(err => {
-                res.status(500).send({
-                    message: "Error retrieving Curso with id=" + id
-                });
-            });
-    };
-
-    exports.update = (req, res) => {
-        const id = req.params.id;
-
-        Curso.update(req.body, {
-            where: { id_curso: id }
+    Curso.findByPk(id, {
+        include: [
+            { model: db.teachers, as: "teacher" },
+            { model: db.grados, as: "grados", include: [{ model: db.students, as: "estudiante" }] },
+            { model: db.asignaciones, as: "asignaciones", include: [{ model: db.students, as: "student" }] }
+        ]
+    })
+        .then(data => {
+            if (!data) return res.status(404).send({ message: "Curso no encontrado" });
+            res.send(data);
         })
-            .then(num => {
-                if (num == 1) {
-                    res.send({
-                        message: "Curso was updated successfully."
-                    });
-                } else {
-                    res.send({
-                        message: `Cannot update curso with id=${id}. Maybe curso was not found or req.body is empty!`
-                    });
-                }
-            })
-            .catch(err => {
-                res.status(500).send({
-                    message: "Error updating curso with id=" + id
-                });
-            });
+        .catch(err => res.status(500).send({ message: err.message || `Error buscando curso con id=${id}` }));
+};
+
+
+// Actualizar curso
+exports.update = (req, res) => {
+    const id = req.params.id;
+
+    const datosActualizados = {
+        teacherId: req.body.teacherId,
+        nombre: req.body.nombre,
+        codigo: req.body.codigo,
+        modalidad: req.body.modalidad,
+        credito: req.body.credito
     };
 
-    exports.delete = (req, res) => {
-        const id = req.params.id;
-       
-        Curso.destroy({
-            where: { id_curso: id }
+    Curso.update(datosActualizados, { where: { id_curso: id } })
+        .then(num => {
+            if (num == 1) {
+                Curso.findByPk(id, {
+                    include: [{ model: Teacher, as: "teacher", attributes: ["id", "nombre"] }]
+                }).then(data => res.send({ message: "Curso actualizado", data }));
+            } else {
+                res.status(404).send({ message: `No se encontró curso con id=${id}` });
+            }
         })
-            .then(num => {
-                if (num == 1) {
-                    res.send({
-                        message: "Cursp was deleted successfully!"
-                    });
-                } else {
-                    res.send({
-                        message: `Cannot delete curso with id=${id}. El curso no fue encontado!`
-                    });
-                }
-            })
-            .catch(err => {
-                res.status(500).send({
-                    message: "Could not delete curso with id=" + id
-                });
-            });
-    };
+        .catch(err => res.status(500).send({ message: err.message || `Error actualizando curso con id=${id}` }));
+};
 
-    exports.deleteAll = (req, res) => {
-        Curso.destroy({
-            where: {},
-            truncate: false
+// Eliminar curso
+exports.delete = (req, res) => {
+    const id = req.params.id;
+
+    Curso.destroy({ where: { id_curso: id } })
+        .then(num => {
+            if (num == 1) res.send({ message: "Curso eliminado" });
+            else res.status(404).send({ message: `No se encontró curso con id=${id}` });
         })
-            .then(nums => {
-                res.send({ message: `${nums} curso were deleted successfully!` });
-            })
-            .catch(err => {
-                res.status(500).send({
-                    message:
-                        err.message || "Some error occurred while removing all cursos."
-                });
-            });
-    };
+        .catch(err => res.status(500).send({ message: err.message || `Error eliminando curso con id=${id}` }));
+};

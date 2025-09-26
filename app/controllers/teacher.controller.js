@@ -1,131 +1,152 @@
- const db = require("../models");
-    const Teacher = db.teacher;
-    const Op = db.Sequelize.Op;
+const db = require("../models");
+const Teacher = db.teachers;
+const Course = db.courses;
+const Grado = db.grados;
+const Student = db.students;
 
- 
-    exports.create = (req, res) => {
-        // Validamos que dentro del  request no venga vacio el nombre, de lo contrario returna error
-        if (!req.body.nombre) {
-            res.status(400).send({
-                message: "Content can not be empty!"
-            });
-            return;
-        }
+// Crear teacher
+exports.create = (req, res) => {
+    if (!req.body.nombre || !req.body.email) {
+        return res.status(400).send({ message: "nombre y email son obligatorios" });
+    }
 
-        
-    const teacher = {
-            nombre: req.body.nombre,
-            email: req.body.email,
-            telefono: req.body.telefono,
-            direccion: req.body.direccion,
-            especialidad: req.body.especialidad,
-            estado: req.body.estado
-        };
-
-        // Save a new Client into the database
-        Teacher.create(teacher)
-            .then(data => {
-                res.send(data);
-            })
-            .catch(err => {
-                res.status(500).send({
-                    message:
-                        err.message || "Some error occurred while creating the teacher."
-                });
-            });
+    const nuevoTeacher = {
+        nombre: req.body.nombre,
+        email: req.body.email,
+        telefono: req.body.telefono || "",
+        direccion: req.body.direccion || "",
+        especialidad: req.body.especialidad || "",
+        estado: req.body.estado !== undefined ? req.body.estado : true
     };
 
-   exports.findAll = (req, res) => {
-        const nombre = req.query.nombre;
-        var condition = nombre ? { nombre: { [Op.iLike]: `%${nombre}%` } } : null;
+    Teacher.create(nuevoTeacher)
+        .then(data => res.status(201).send(data))
+        .catch(err => res.status(500).send({ message: err.message || "Error creando teacher" }));
+};
 
-        Teacher.findAll({ where: condition })
-            .then(data => {
-                res.send(data);
-            })
-            .catch(err => {
-                res.status(500).send({
-                    message:
-                        err.message || "Some error occurred while retrieving teacher."
-                });
-            });
+// Listar todos los teachers con cursos y notas
+exports.findAll = (req, res) => {
+    Teacher.findAll({
+        attributes: ["id", "nombre", "email", "telefono", "direccion", "especialidad", "estado"],
+        include: [
+            {
+                model: Course,
+                as: "cursos", // alias de Teacher.hasMany(courses)
+                attributes: ["id_curso", "nombre", "codigo", "modalidad", "credito"],
+                include: [
+                    {
+                        model: Grado,
+                        as: "grados", // alias de Course.hasMany(grados)
+                        attributes: ["id", "nota", "tipoEvaluacion", "fecha"],
+                        include: [
+                            {
+                                model: Student,
+                                as: "estudiante", // alias de Grado.belongsTo(Student)
+                                attributes: ["id", "nombre", "apellido", "email"]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    })
+    .then(data => res.send(data))
+    .catch(err => res.status(500).send({ message: err.message || "Error listando teachers" }));
+};
+
+// Buscar teacher por ID con cursos y notas
+exports.findOne = (req, res) => {
+    const id = req.params.id;
+
+    Teacher.findByPk(id, {
+        attributes: ["id", "nombre", "email", "telefono", "direccion", "especialidad", "estado"],
+        include: [
+            {
+                model: Course,
+                as: "cursos",
+                attributes: ["id_curso", "nombre", "codigo", "modalidad", "credito"],
+                include: [
+                    {
+                        model: Grado,
+                        as: "grados",
+                        attributes: ["id", "nota", "tipoEvaluacion", "fecha"],
+                        include: [
+                            {
+                                model: Student,
+                                as: "estudiante",
+                                attributes: ["id", "nombre", "apellido", "email"]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    })
+    .then(data => {
+        if (!data) return res.status(404).send({ message: "Teacher no encontrado" });
+        res.send(data);
+    })
+    .catch(err => res.status(500).send({ message: err.message || `Error buscando teacher con id=${id}` }));
+};
+
+// Actualizar teacher
+exports.update = (req, res) => {
+    const id = req.params.id;
+
+    const datosActualizados = {
+        nombre: req.body.nombre,
+        email: req.body.email,
+        telefono: req.body.telefono,
+        direccion: req.body.direccion,
+        especialidad: req.body.especialidad,
+        estado: req.body.estado
     };
 
-    // Find a single Tutorial with an id
-    exports.findOne = (req, res) => {
-        const id = req.params.id;
-
-        Teacher.findByPk(id)
-            .then(data => {
-                res.send(data);
-            })
-            .catch(err => {
-                res.status(500).send({
-                    message: "Error retrieving Teacher with id=" + id
-                });
-            });
-    };
-
-    exports.update = (req, res) => {
-        const id = req.params.id;
-
-        Teacher.update(req.body, {
-            where: { teacherId: id }
+    Teacher.update(datosActualizados, { where: { id } })
+        .then(num => {
+            if (num == 1) {
+                // Traer teacher actualizado con todos los cursos y notas
+                Teacher.findByPk(id, {
+                    attributes: ["id", "nombre", "email", "telefono", "direccion", "especialidad", "estado"],
+                    include: [
+                        {
+                            model: Course,
+                            as: "cursos",
+                            attributes: ["id_curso", "nombre", "codigo", "modalidad", "credito"],
+                            include: [
+                                {
+                                    model: Grado,
+                                    as: "grados",
+                                    attributes: ["id", "nota", "tipoEvaluacion", "fecha"],
+                                    include: [
+                                        {
+                                            model: Student,
+                                            as: "estudiante",
+                                            attributes: ["id", "nombre", "apellido", "email"]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                })
+                .then(data => res.send({ message: "Teacher actualizado", data }))
+                .catch(err => res.status(500).send({ message: err.message }));
+            } else {
+                res.status(404).send({ message: `No se encontró teacher con id=${id}` });
+            }
         })
-            .then(num => {
-                if (num == 1) {
-                    res.send({
-                        message: "Teacher was updated successfully."
-                    });
-                } else {
-                    res.send({
-                        message: `Cannot update Teacher with id=${id}. Maybe Teacher was not found or req.body is empty!`
-                    });
-                }
-            })
-            .catch(err => {
-                res.status(500).send({
-                    message: "Error updating Teacher with id=" + id
-                });
-            });
-    };
+        .catch(err => res.status(500).send({ message: err.message || `Error actualizando teacher con id=${id}` }));
+};
 
-    exports.delete = (req, res) => {
-        const id = req.params.id;
-        // utilizamos el metodo destroy para eliminar el objeto mandamos la condicionante where id = parametro que recibimos 
-        Teacher.destroy({
-            where: { teacherId: id }
-        })
-            .then(num => {
-                if (num == 1) {
-                    res.send({
-                        message: "Teacher was deleted successfully!"
-                    });
-                } else {
-                    res.send({
-                        message: `Cannot delete teacher with id=${id}. El teacher no fue encontado!`
-                    });
-                }
-            })
-            .catch(err => {
-                res.status(500).send({
-                    message: "Could not delete teacher with id=" + id
-                });
-            });
-    };
+// Eliminar teacher
+exports.delete = (req, res) => {
+    const id = req.params.id;
 
-    exports.deleteAll = (req, res) => {
-        Teacher.destroy({
-            where: {},
-            truncate: false
+    Teacher.destroy({ where: { id } })
+        .then(num => {
+            if (num == 1) res.send({ message: "Teacher eliminado" });
+            else res.status(404).send({ message: `No se encontró teacher con id=${id}` });
         })
-            .then(nums => {
-                res.send({ message: `${nums} Teacher were deleted successfully!` });
-            })
-            .catch(err => {
-                res.status(500).send({
-                    message:
-                        err.message || "Some error occurred while removing all Teachers."
-                });
-            });
-    };
+        .catch(err => res.status(500).send({ message: err.message || `Error eliminando teacher con id=${id}` }));
+};
