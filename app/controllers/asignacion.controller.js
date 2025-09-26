@@ -2,70 +2,86 @@ const db = require("../models");
 
 const Asignacion = db.asignaciones;
 const Student = db.students;
-const Course = db.courses;
+const Curso = db.courses;
 
 // Crear una nueva asignacion
-exports.create = async (req, res) => {
-    try {
-        const asignacion = await Asignacion.create(req.body);
-        res.status(201).json({ message: "Asignacion creada correctamente", data: asignacion });
-    } catch (error) {
-        res.status(500).json({ message: "Error creando asignacion", error: error.message });
+exports.create = (req, res) => {
+    if (!req.body.studentId || !req.body.courseId) {
+        return res.status(400).send({ message: "studentId y courseId son obligatorios" });
     }
+
+    const nuevaAsignacion = {
+        studentId: req.body.studentId,
+        courseId: req.body.courseId
+    };
+
+    Asignacion.create(nuevaAsignacion)
+        .then(data => res.status(201).send(data))
+        .catch(err => res.status(500).send({ message: err.message || "Error creando asignacion" }));
 };
 
-// Listar todas las asignaciones con estudiante y curso
-exports.findAll = async (req, res) => {
-    try {
-        const asignaciones = await Asignacion.findAll({
-            include: [
-                { model: Student, as: "student", attributes: ["nombre"] },
-                { model: Course, as: "course", attributes: ["nombre"] }
-            ]
-        });
-        res.json({data : asignaciones});
-    } catch (error) {
-        res.status(500).json({ message: "Error listando asignaciones", error: error.message });
-    }
+// Listar todas las asignaciones con solo id y nombre
+exports.findAll = (req, res) => {
+    Asignacion.findAll({
+        include: [
+            { model: Student, as: "student", attributes: ["id", "nombre"] },
+            { model: Curso, as: "course", attributes: ["id_curso", "nombre"] }
+        ]
+    })
+    .then(data => res.send(data))
+    .catch(err => res.status(500).send({ message: err.message || "Error listando asignaciones" }));
 };
 
 // Buscar por ID
-exports.findOne = async (req, res) => {
-    try {
-        const asignacion = await Asignacion.findByPk(req.params.id, {
-            include: [
-                { model: Student, as: "student", attributes: ["nombre"] },
-                { model: Course, as: "course", attributes: ["nombre"] }
-            ]
-        });
-        if (!asignacion) return res.status(404).json({ message: "Asignacion no encontrada" });
-        res.json(asignacion);
-    } catch (error) {
-        res.status(500).json({ message: "Error buscando asignacion", error: error.message });
-    }
+exports.findOne = (req, res) => {
+    const id = req.params.id;
+
+    Asignacion.findByPk(id, {
+        include: [
+            { model: Student, as: "student" },  // trae todos los campos del estudiante
+            { model: Curso, as: "course" }      // trae todos los campos del curso
+        ]
+    })
+        .then(data => {
+            if (!data) return res.status(404).send({ message: "Asignacion no encontrada" });
+            res.send(data);
+        })
+        .catch(err => res.status(500).send({ message: err.message || `Error buscando asignacion con id=${id}` }));
 };
 
 // Actualizar asignacion
-exports.update = async (req, res) => {
-    try {
-        const [updated] = await Asignacion.update(req.body, { where: { id: req.params.id } });
-        if (updated) {
-            const updatedAsignacion = await Asignacion.findByPk(req.params.id);
-            return res.json({ message: "Asignacion actualizada correctamente", data: updatedAsignacion });
-        }
-        res.status(404).json({ message: "Asignacion no encontrada para actualizar" });
-    } catch (error) {
-        res.status(500).json({ message: "Error actualizando asignacion", error: error.message });
-    }
+exports.update = (req, res) => {
+    const id = req.params.id;
+
+    const datosActualizados = {
+        studentId: req.body.studentId,
+        courseId: req.body.courseId
+    };
+
+    Asignacion.update(datosActualizados, { where: { id } })
+        .then(num => {
+            if (num == 1) {
+                Asignacion.findByPk(id, {
+                    include: [
+                        { model: Student, as: "student", attributes: ["id", "nombre"] },
+                        { model: Curso, as: "course", attributes: ["id_curso", "nombre"] }
+                    ]
+                }).then(data => res.send({ message: "Asignacion actualizada", data }));
+            } else {
+                res.status(404).send({ message: `No se encontró asignacion con id=${id}` });
+            }
+        })
+        .catch(err => res.status(500).send({ message: err.message || `Error actualizando asignacion con id=${id}` }));
 };
 
 // Eliminar asignacion
-exports.delete = async (req, res) => {
-    try {
-        const deleted = await Asignacion.destroy({ where: { id: req.params.id } });
-        if (deleted) return res.json({ message: "Asignacion eliminada correctamente" });
-        res.status(404).json({ message: "Asignacion no encontrada para eliminar" });
-    } catch (error) {
-        res.status(500).json({ message: "Error eliminando asignacion", error: error.message });
-    }
+exports.delete = (req, res) => {
+    const id = req.params.id;
+
+    Asignacion.destroy({ where: { id } })
+        .then(num => {
+            if (num == 1) res.send({ message: "Asignacion eliminada" });
+            else res.status(404).send({ message: `No se encontró asignacion con id=${id}` });
+        })
+        .catch(err => res.status(500).send({ message: err.message || `Error eliminando asignacion con id=${id}` }));
 };

@@ -5,21 +5,15 @@ module.exports = (sequelize, Sequelize) => {
             primaryKey: true,
             autoIncrement: true
         },
-        courseId: {
-            type: Sequelize.INTEGER,
-            allowNull: false,
-            references: {
-                model: "cursos",
-                key: "id_curso"
-            }
-        },
         studentId: {
             type: Sequelize.INTEGER,
             allowNull: false,
-            references: {
-                model: "students",
-                key: "id"
-            }
+            references: { model: "students", key: "id" }
+        },
+        courseId: {
+            type: Sequelize.INTEGER,
+            allowNull: false,
+            references: { model: "cursos", key: "id_curso" }
         },
         nota: {
             type: Sequelize.FLOAT,
@@ -36,17 +30,8 @@ module.exports = (sequelize, Sequelize) => {
     });
 
     Grado.associate = (models) => {
-        // Grado -> Curso
-        Grado.belongsTo(models.Cursos, {
-            foreignKey: "courseId",
-            as: "curso"
-        });
-
-        // Grado -> Student
-        Grado.belongsTo(models.Student, {
-            foreignKey: "studentId",
-            as: "student"
-        });
+        Grado.belongsTo(models.Student, { foreignKey: "studentId", as: "estudiante" });
+        Grado.belongsTo(models.Curso, { foreignKey: "courseId", as: "curso" });
     };
 
     return Grado;

@@ -12,7 +12,7 @@ module.exports = (sequelize, Sequelize) => {
                 model: "students",
                 key: "id"
             }
-},
+        },
         courseId: {
             type: Sequelize.INTEGER,
             allowNull: false,
@@ -22,6 +22,11 @@ module.exports = (sequelize, Sequelize) => {
             }
         }
     });
+
+    Asignacion.associate = (models) => {
+        Asignacion.belongsTo(models.Student, { foreignKey: "studentId", as: "student" });
+        Asignacion.belongsTo(models.Curso, { foreignKey: "courseId", as: "course" });
+    };
 
     return Asignacion;
 };

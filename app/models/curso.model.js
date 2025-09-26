@@ -1,5 +1,5 @@
 module.exports = (sequelize, Sequelize) => {
-    const Cursos = sequelize.define("curso", {
+    const Curso = sequelize.define("curso", {
         id_curso: {
             type: Sequelize.INTEGER,
             primaryKey: true,
@@ -31,17 +31,11 @@ module.exports = (sequelize, Sequelize) => {
         }
     });
 
-    Cursos.associate = (models) => {
-        Cursos.belongsTo(models.Teacher, {
-            foreignKey: "teacherId",
-            as: "teacher"
-        });
-
-        Cursos.hasMany(models.Grado, {
-            foreignKey: "courseId",
-            as: "notas"
-        });
+    Curso.associate = (models) => {
+        Curso.belongsTo(models.Teacher, { foreignKey: "teacherId", as: "teacher" });
+        Curso.hasMany(models.Grado, { foreignKey: "courseId", as: "notas" });
+        Curso.hasMany(models.Asignacion, { foreignKey: "courseId", as: "asignaciones" });
     };
 
-    return Cursos;
+    return Curso;
 };
